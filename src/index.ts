@@ -68,8 +68,8 @@ export default {
 				const workshopLlm = createWorkshopLlm(env.DEV_SHOWDOWN_API_KEY, interactionId);
 				const result = await generateText({
 					model: workshopLlm.chatModel('deli-4'),
-					system: 'You are a helpful assistant that generates product data in structured JSON.',
-					prompt: payload.question,
+					system: 'You are a helpful assistant that extracts product data from a description and returns it as structured JSON.',
+					prompt: payload.description,
 					output: {
 						schema: z.object({
 							name: z.string(),
