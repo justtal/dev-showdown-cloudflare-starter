@@ -64,40 +64,40 @@ export default {
 					answer: result.text || 'N/A',
 				});
 			}
-		case 'JSON_MODE': {
-			const workshopLlm = createWorkshopLlm(env.DEV_SHOWDOWN_API_KEY, interactionId);
-			const result = await generateText({
-				model: workshopLlm.chatModel('deli-4'),
-				system: 'You are a helpful assistant that generates product data in structured JSON.',
-				prompt: payload.question,
-				output: {
-					schema: z.object({
-						name: z.string(),
-						price: z.number(),
-						currency: z.string(),
-						inStock: z.boolean(),
-						dimensions: z.object({
-							length: z.number(),
-							width: z.number(),
-							height: z.number(),
-							unit: z.string(),
-						}),
-						manufacturer: z.object({
+			case 'JSON_MODE': {
+				const workshopLlm = createWorkshopLlm(env.DEV_SHOWDOWN_API_KEY, interactionId);
+				const result = await generateText({
+					model: workshopLlm.chatModel('deli-4'),
+					system: 'You are a helpful assistant that generates product data in structured JSON.',
+					prompt: payload.question,
+					output: {
+						schema: z.object({
 							name: z.string(),
-							country: z.string(),
-							website: z.string(),
+							price: z.number(),
+							currency: z.string(),
+							inStock: z.boolean(),
+							dimensions: z.object({
+								length: z.number(),
+								width: z.number(),
+								height: z.number(),
+								unit: z.string(),
+							}),
+							manufacturer: z.object({
+								name: z.string(),
+								country: z.string(),
+								website: z.string(),
+							}),
+							specifications: z.object({
+								weight: z.number(),
+								weightUnit: z.string(),
+								warrantyMonths: z.number(),
+							}),
 						}),
-						specifications: z.object({
-							weight: z.number(),
-							weightUnit: z.string(),
-							warrantyMonths: z.number(),
-						}),
-					}),
-				},
-			});
+					},
+				});
 
-			return Response.json(JSON.parse(result.text));
-		}
+				return Response.json(JSON.parse(result.text));
+			}
 				default:
 					return new Response('Solver not found', { status: 404 });
 			}
