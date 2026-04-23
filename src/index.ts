@@ -1,5 +1,5 @@
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { generateText } from 'ai';
+import { generateText, streamText, tool } from 'ai';
 import { z } from 'zod';
 
 const INTERACTION_ID_HEADER = 'X-Interaction-Id';
@@ -98,8 +98,49 @@ export default {
 
 				return Response.json(JSON.parse(result.text));
 			}
-				default:
-					return new Response('Solver not found', { status: 404 });
+			case 'BASIC_TOOL_CALL': {
+				const workshopLlm = createWorkshopLlm(env.DEV_SHOWDOWN_API_KEY, interactionId);
+				const result = await generateText({
+					model: workshopLlm.chatModel('deli-4'),
+					system: 'You are a helpful weather assistant. Use the getWeather tool to fetch current weather data, then respond with a concise natural language answer that includes the temperature.',
+					prompt: payload.question,
+					tools: {
+						getWeather: tool({
+							description: 'Get the current weather for a city',
+							parameters: z.object({
+								city: z.string().describe('The city name to get weather for'),
+							}),
+							execute: async ({ city }: { city: string }) => {
+								const res = await fetch('https://devshowdown.com/api/weather', {
+									method: 'POST',
+									headers: {
+										'Content-Type': 'application/json',
+										[INTERACTION_ID_HEADER]: interactionId,
+									},
+									body: JSON.stringify({ city }),
+								});
+								return res.json();
+							},
+						}),
+					},
+					maxSteps: 2,
+				});
+
+				return Response.json({
+					answer: result.text || 'N/A',
+				});
+			}
+			case 'RESPONSE_STREAMING': {
+				const workshopLlm = createWorkshopLlm(env.DEV_SHOWDOWN_API_KEY, interactionId);
+				const result = streamText({
+					model: workshopLlm.chatModel('deli-4'),
+					prompt: payload.prompt,
+				});
+
+				return result.toTextStreamResponse();
+			}
+			default:
+				return new Response('Solver not found', { status: 404 });
 			}
 	},
 	} satisfies ExportedHandler<Env>;
